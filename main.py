@@ -2,26 +2,19 @@ from datetime import datetime, timedelta
 import random
 import re
 
-
 #! ================ FIRST TASK
 def get_days_from_today(date):
 
-    today = datetime.now()
-    days_left = None
+    today = datetime.today().date()
 
     try:
-        date = datetime.strptime(date, "%Y-%m-%d")
+        date = datetime.strptime(date, "%Y-%m-%d").date()
 
     except ValueError:
         print("Incorrect date format. Format is YYYY-MM-DD")
+        return None
 
-    except Exception as e:
-        print(f"Something went wrong: {e}")
-
-    else:
-        days_left = date - today
-
-    return days_left.days if days_left is not None else "Try again"
+    return (today - date).days
 
 
 random_date = get_days_from_today("2025-04-11")
@@ -29,7 +22,6 @@ print("random date: ", random_date)
 
 user_input = get_days_from_today(input("Enter you date in format: YYYY-MM-DD >>>> "))
 print("user-input: ", user_input)
-
 
 #! =========== SECOND TASK
 def get_numbers_ticket(min, max, quantity) -> list:
@@ -39,10 +31,10 @@ def get_numbers_ticket(min, max, quantity) -> list:
 
     except ValueError as e:
         print("Check input data")
-        return e
+        return []
 
     else:
-        if min < 1 or max > 1000 or quantity > (max - min):
+        if min < 1 or max > 1000 or min > max or quantity < 1 or quantity > (max - min + 1):
             print("Check your range")
             return []
 
@@ -67,22 +59,16 @@ print("Ваші лотерейні числа:", lottery_numbers)
 
 #! =========== THIRD TASK
 
-
 def normalize_phone(num):
 
-    num = num.strip()
-    num = re.findall(r"\d", num)
-    num = "".join(num)
+    num = re.sub(r"\D", "", num)
 
-    if num[0] == "0":
-        num = f"+38{num}"
-    elif num[0] == "3":
+    if num.startswith("380"):
         num = f"+{num}"
     else:
-        num = f"+380{num}"
+        num = f"+38{num}"
 
     return num
-
 
 raw_numbers = [
     "067\\t123 4567",
@@ -94,43 +80,40 @@ raw_numbers = [
     "(050)8889900",
     "38050-111-22-22",
     "38050 111 22 11   ",
-    "501234567",
 ]
 
 sanitized_numbers = [normalize_phone(num) for num in raw_numbers]
 print("Нормалізовані номери телефонів для SMS-розсилки:", sanitized_numbers)
 
-
 #! =========== FOURTH TASK
-def get_upcoming_birthdays(users):
+def get_upcoming_birthdays(users) :
 
     coming_birthdays = []
     today = datetime.today().date()
 
     for user in users:
+
         birthday_date = datetime.strptime(user["birthday"], "%Y.%m.%d").date()
 
-        birthday_this_year = birthday_date.replace(year=today.year)
+        try:
+            birthday_this_year = birthday_date.replace(year=today.year)
+        except ValueError:
+            birthday_this_year = birthday_date.replace(year=today.year, day=28)
+
+        if birthday_this_year.weekday() > 4:
+            birthday_this_year += timedelta(days=7 - birthday_this_year.weekday())
 
         if birthday_this_year < today:
+            try:
+                birthday_this_year = birthday_date.replace(year=today.year + 1)
+            except ValueError:
+                birthday_this_year = birthday_date.replace(year=today.year + 1, day=28)
 
-            birthday_this_year = birthday_date.replace(year=today.year + 1)
-            continue
+        if birthday_this_year.weekday() > 4:
+            birthday_this_year += timedelta(days=7 - birthday_this_year.weekday())
 
-        differ = birthday_this_year - today
-
-        if differ.days <= 7:
-
-            if birthday_this_year.weekday() > 4:
-                birthday_this_year += timedelta(days=7 - birthday_this_year.weekday())
-
-            user["congratulation_date"] = birthday_this_year.strftime("%Y.%m.%d")
-            coming_birthdays.append(
-                {
-                    "name": user["name"],
-                    "congratulation_date": user["congratulation_date"],
-                }
-            )
+        if today <= birthday_this_year <= today + timedelta(days=6):
+            coming_birthdays.append({"name": user["name"], "congratulation_date": birthday_this_year.strftime("%Y.%m.%d")})
 
     return coming_birthdays
 
